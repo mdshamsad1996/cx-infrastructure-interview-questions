@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: emplate that creates a S3 Bucket that we can use to upload the packaged python lambda source code
+
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  pArtifactS3BucketName:
+    Type: String
+    AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-.]*[0-9a-zA-Z])*$
+    ConstraintDescription: bucket name can include numbers, lowercase
+      letters, uppercase letters, periods (.), and hyphens (-). It cannot start or
+      end with a hyphen (-).
+    Default: s3-bucket-scenario2
+
+Resources:
+  rS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref pArtifactS3BucketName
+
+Outputs:
+  GetBucketName:
+    Description: fetch the created Bucket
+    Value: !Ref rS3Bucket
