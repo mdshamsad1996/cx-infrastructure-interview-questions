@@ -1,9 +1,24 @@
 AWSTemplateFormatVersion: 2010-09-09
-
+Transform: AWS::Serverless-2016-10-31
 Description: ECS Infrastructure Interview Template 1
 
 Parameters:
+  pArtifactS3BucketName:
+    Type: String
+    Default: my-bucket-scenrio-1
 
+  pArtifactS3Key:
+    Type: String
+    Default: lambda.zip 
+
+  pLogLevel:
+    Type: String
+    Default: Info
+
+  pFunctionAliasName:
+    Type: String
+    Default: HeeloAlias
+  
 Resources:
   rLambdaFunctionRole:
     Type: AWS::IAM::Role
@@ -17,13 +32,13 @@ Resources:
                 - lambda.amazonaws.com
             Action:
               - sts:AssumeRole
-      Name: lambda-function-role
+      RoleName: lambda-function-role
       Path: /
       Policies:
         - PolicyName: allow-ec2
           PolicyDocument:
             Version: '2012-10-17'
-            Statement:
+            Statement:  
               Action:
                 - ec2:*
               Effect: Allow
@@ -31,24 +46,28 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
         - arn:aws:iam::aws:policy/AmazonGlacierFullAccess
-
+  
+  # Lambda function
   rLambdaFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: lambda.lambda_handler
+      Handler: lambda.handler
+      Runtime: python3.7
       Environment:
         Variables:
           LOG_LEVEL: !Ref pLogLevel
       CodeUri:
         Bucket: !Ref pArtifactS3BucketName
         Key: !Ref pArtifactS3Key
-      Role: !Ref rLambdaFunctionRole
+      Role: !GetAtt rLambdaFunctionRole.Arn
+      AutoPublishAlias: !Ref pFunctionAliasName
       DeploymentPreference:
         Type: AllAtOnce
-      Alarms:
-        - !Ref rLambdaFunctionAliasErrorAlarm
-        - !Ref rLambdaFunctionVersionErrorAlarm
-    ​
+        Alarms:
+          - !Ref rLambdaFunctionAliasErrorAlarm
+          - !Ref rLambdaFunctionVersionErrorAlarm
+  
+  # Cloud watch Error Alarm​
   rLambdaFunctionAliasErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -65,7 +84,8 @@ Resources:
       Period: 300
       Statistic: Sum
       Threshold: 0
-    ​
+
+  # Cloud watch Version alarm​
   rLambdaFunctionVersionErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -82,5 +102,3 @@ Resources:
       Period: 300
       Statistic: Sum
       Threshold: 0
-
-Outputs:
